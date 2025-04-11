@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store";
 import { setBoardSize, setWinningLineLength } from "../store/gameSlice";
 import { Box } from "@mui/material";
 import styled from "@emotion/styled";
+import Alert from "./Alert";
 
 const StyledTypography = styled.div`
   font-weight: bold;
@@ -36,37 +37,61 @@ const StyledButtonGroup = styled.div`
   }
 `;
 
+const AlertContainer = styled.div`
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+`;
+
 const SettingsPanel: React.FC = () => {
   const dispatch = useDispatch();
-
   const { boardSize, winningLineLength } = useSelector(
     (state: RootState) => state.game
   );
 
-  // calculate the maximum board size based on screen size
+  const [alertMessage, setAlertMessage] = useState<string>("");
+
+  useEffect(() => {
+    if (alertMessage) {
+      const timer = setTimeout(() => {
+        setAlertMessage(""); // Clear the alert after 3 seconds
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [alertMessage]);
+
   const calculateMaxBoardSize = (): number => {
-    const cellSize = 50; // 50px for each cell
-    const maxWidth = Math.floor(window.innerWidth / (cellSize * 1.6)); // Maximum columns
-    const maxHeight = Math.floor(window.innerHeight / (cellSize * 1.6)); // Maximum rows
-    return Math.min(maxWidth, maxHeight); // Return smaller value for square board
+    const cellSize = 50;
+    const maxWidth = Math.floor(window.innerWidth / (cellSize * 1.6));
+    const maxHeight = Math.floor(window.innerHeight / (cellSize * 1.6));
+    return Math.min(maxWidth, maxHeight);
   };
 
   const handleIncreaseBoard = (): void => {
     const maxBoardSize = calculateMaxBoardSize();
     if (boardSize < maxBoardSize) {
       dispatch(setBoardSize(boardSize + 1));
+    } else {
+      setAlertMessage("You have reached the maximum board size.");
     }
   };
 
   const handleDecreaseBoard = (): void => {
     if (boardSize > 3) {
       dispatch(setBoardSize(boardSize - 1));
+    } else {
+      setAlertMessage("Board size cannot be less than 3.");
     }
   };
 
   const handleIncreaseWinLength = (): void => {
     if (winningLineLength < boardSize) {
       dispatch(setWinningLineLength(winningLineLength + 1));
+    } else {
+      setAlertMessage("Winning line length cannot exceed the board size.");
     }
   };
 
@@ -84,6 +109,10 @@ const SettingsPanel: React.FC = () => {
       gap={2}
       mb={2}
     >
+      <AlertContainer>
+        {alertMessage ? <Alert message={alertMessage} /> : null}
+      </AlertContainer>
+
       {/* Row 1: Board Size */}
       <Box display="flex" flexDirection="row" alignItems="center" gap={1}>
         <StyledTypography>{`Board Size: ${boardSize} x ${boardSize}`}</StyledTypography>
